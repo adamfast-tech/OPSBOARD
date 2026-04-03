@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPSBOARD — IT Field Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0e0f0d;
+    --surface:   #151714;
+    --panel:     #1a1c18;
+    --border:    #2a2d26;
+    --border-hi: #3d4238;
+    --amber:     #e8a020;
+    --amber-dim: #8a5e12;
+    --amber-glow:#e8a02033;
+    --green:     #4caf50;
+    --red:       #d94f4f;
+    --blue:      #4a9eff;
+    --text:      #c8cbc2;
+    --text-dim:  #6b6e63;
+    --text-hi:   #edeee8;
+    --mono:      'Share Tech Mono', monospace;
+    --display:   'Barlow Condensed', sans-serif;
+    --body:      'Barlow', sans-serif;
+  }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: var(–body);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Subtle grain overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 200 200’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘n’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23n)’ opacity=‘0.03’/%3E%3C/svg%3E”);
+pointer-events: none;
+z-index: 9999;
+opacity: 0.4;
+}
+
+/* ── HEADER ── */
+header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 12px 24px;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+position: sticky;
+top: 0;
+z-index: 100;
+}
+
+.logo {
+display: flex;
+align-items: baseline;
+gap: 10px;
+}
+
+.logo-mark {
+font-family: var(–display);
+font-weight: 900;
+font-size: 1.6rem;
+letter-spacing: 0.08em;
+color: var(–amber);
+text-transform: uppercase;
+}
+
+.logo-sub {
+font-family: var(–mono);
+font-size: 0.65rem;
+color: var(–text-dim);
+letter-spacing: 0.2em;
+text-transform: uppercase;
+}
+
+.header-status {
+display: flex;
+align-items: center;
+gap: 20px;
+font-family: var(–mono);
+font-size: 0.7rem;
+color: var(–text-dim);
+}
+
+.status-dot {
+width: 7px; height: 7px;
+border-radius: 50%;
+background: var(–green);
+box-shadow: 0 0 6px var(–green);
+animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.4; }
+}
+
+#live-time {
+color: var(–amber);
+font-size: 0.85rem;
+}
+
+/* ── NAV TABS ── */
+nav {
+display: flex;
+gap: 2px;
+padding: 0 24px;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+}
+
+.tab-btn {
+font-family: var(–display);
+font-weight: 600;
+font-size: 0.85rem;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+padding: 10px 18px;
+background: none;
+border: none;
+border-bottom: 2px solid transparent;
+color: var(–text-dim);
+cursor: pointer;
+transition: all 0.18s;
+position: relative;
+}
+
+.tab-btn:hover { color: var(–text); }
+
+.tab-btn.active {
+color: var(–amber);
+border-bottom-color: var(–amber);
+}
+
+/* ── LAYOUT ── */
+.workspace {
+padding: 20px 24px;
+display: none;
+animation: fadein 0.25s ease;
+}
+
+.workspace.active { display: block; }
+
+@keyframes fadein {
+from { opacity: 0; transform: translateY(6px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── PANELS ── */
+.panel {
+background: var(–panel);
+border: 1px solid var(–border);
+border-radius: 4px;
+overflow: hidden;
+}
+
+.panel-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 10px 16px;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+}
+
+.panel-title {
+font-family: var(–display);
+font-weight: 700;
+font-size: 0.8rem;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(–amber);
+}
+
+.panel-badge {
+font-family: var(–mono);
+font-size: 0.6rem;
+color: var(–text-dim);
+background: var(–border);
+padding: 2px 7px;
+border-radius: 2px;
+letter-spacing: 0.1em;
+}
+
+.panel-body {
+padding: 16px;
+}
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.stack  { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── FORM ELEMENTS ── */
+label {
+display: block;
+font-family: var(–mono);
+font-size: 0.65rem;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(–text-dim);
+margin-bottom: 5px;
+}
+
+input[type=text], input[type=number], select, textarea {
+width: 100%;
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+color: var(–text-hi);
+font-family: var(–mono);
+font-size: 0.85rem;
+padding: 8px 10px;
+outline: none;
+transition: border-color 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+border-color: var(–amber-dim);
+box-shadow: 0 0 0 2px var(–amber-glow);
+}
+
+select option { background: var(–panel); }
+
+textarea { resize: vertical; min-height: 80px; }
+
+.btn {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+font-family: var(–display);
+font-weight: 700;
+font-size: 0.8rem;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+padding: 9px 18px;
+border: 1px solid var(–amber-dim);
+border-radius: 3px;
+background: transparent;
+color: var(–amber);
+cursor: pointer;
+transition: all 0.15s;
+}
+
+.btn:hover {
+background: var(–amber-glow);
+border-color: var(–amber);
+box-shadow: 0 0 12px var(–amber-glow);
+}
+
+.btn-sm { padding: 5px 12px; font-size: 0.72rem; }
+
+.btn-ghost {
+border-color: var(–border-hi);
+color: var(–text-dim);
+}
+
+.btn-ghost:hover {
+background: var(–border);
+border-color: var(–text-dim);
+box-shadow: none;
+color: var(–text);
+}
+
+.btn-danger {
+border-color: #6b2020;
+color: var(–red);
+}
+.btn-danger:hover { background: #6b202033; border-color: var(–red); box-shadow: none; }
+
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ── RESULT BOX ── */
+.result-box {
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+padding: 12px 14px;
+font-family: var(–mono);
+font-size: 0.82rem;
+color: var(–text-hi);
+min-height: 44px;
+line-height: 1.6;
+white-space: pre-wrap;
+word-break: break-all;
+margin-top: 10px;
+}
+
+.result-box.highlight {
+border-color: var(–amber-dim);
+color: var(–amber);
+}
+
+.result-grid {
+display: grid;
+gap: 8px;
+margin-top: 10px;
+}
+
+.result-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 7px 12px;
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+}
+
+.result-label {
+font-family: var(–mono);
+font-size: 0.65rem;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 0.1em;
+}
+
+.result-value {
+font-family: var(–mono);
+font-size: 0.85rem;
+color: var(–amber);
+cursor: pointer;
+}
+
+.result-value:hover { text-decoration: underline; }
+
+/* Copy feedback */
+.copy-flash {
+position: fixed;
+bottom: 24px; right: 24px;
+background: var(–panel);
+border: 1px solid var(–amber-dim);
+color: var(–amber);
+font-family: var(–mono);
+font-size: 0.75rem;
+padding: 8px 16px;
+border-radius: 3px;
+opacity: 0;
+transform: translateY(8px);
+transition: all 0.2s;
+pointer-events: none;
+z-index: 1000;
+}
+
+.copy-flash.show {
+opacity: 1;
+transform: translateY(0);
+}
+
+/* Divider */
+.divider {
+border: none;
+border-top: 1px solid var(–border);
+margin: 14px 0;
+}
+
+/* Tag */
+.tag {
+display: inline-block;
+font-family: var(–mono);
+font-size: 0.6rem;
+padding: 2px 8px;
+border-radius: 2px;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+
+.tag-green  { background: #1a3320; color: var(–green); border: 1px solid #2d5a38; }
+.tag-red    { background: #3b1414; color: var(–red);   border: 1px solid #6b2020; }
+.tag-amber  { background: #3b2a10; color: var(–amber); border: 1px solid var(–amber-dim); }
+.tag-blue   { background: #102038; color: var(–blue);  border: 1px solid #1a4060; }
+
+/* ────────────────────────────────────────────────────
+TAB 1 — SUBNET CALCULATOR
+──────────────────────────────────────────────────── */
+#subnet-result .result-row { cursor: default; }
+.cidr-visual {
+margin-top: 12px;
+font-family: var(–mono);
+font-size: 0.72rem;
+color: var(–text-dim);
+line-height: 1.8;
+}
+
+/* ────────────────────────────────────────────────────
+TAB 2 — CMD FORGE
+──────────────────────────────────────────────────── */
+.cmd-output {
+position: relative;
+}
+
+.cmd-copy-btn {
+position: absolute;
+top: 8px; right: 8px;
+font-family: var(–mono);
+font-size: 0.6rem;
+padding: 3px 8px;
+background: var(–border);
+border: 1px solid var(–border-hi);
+border-radius: 2px;
+color: var(–text-dim);
+cursor: pointer;
+transition: all 0.15s;
+}
+
+.cmd-copy-btn:hover { color: var(–amber); border-color: var(–amber-dim); }
+
+.cmd-category {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.cmd-card {
+padding: 10px 14px;
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+cursor: pointer;
+transition: all 0.15s;
+}
+
+.cmd-card:hover {
+border-color: var(–amber-dim);
+background: var(–amber-glow);
+}
+
+.cmd-card-title {
+font-family: var(–display);
+font-weight: 600;
+font-size: 0.78rem;
+letter-spacing: 0.08em;
+color: var(–text-hi);
+}
+
+.cmd-card-desc {
+font-size: 0.72rem;
+color: var(–text-dim);
+margin-top: 3px;
+}
+
+/* ────────────────────────────────────────────────────
+TAB 3 — INCIDENT CHECKLIST
+──────────────────────────────────────────────────── */
+.checklist-item {
+display: flex;
+align-items: flex-start;
+gap: 10px;
+padding: 10px 12px;
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+transition: all 0.15s;
+}
+
+.checklist-item.done {
+opacity: 0.45;
+border-color: transparent;
+}
+
+.checklist-item.done .check-label { text-decoration: line-through; color: var(–text-dim); }
+
+.check-box {
+width: 16px; height: 16px;
+flex-shrink: 0;
+border: 1px solid var(–border-hi);
+border-radius: 2px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+margin-top: 1px;
+transition: all 0.15s;
+}
+
+.check-box.checked {
+background: var(–amber-dim);
+border-color: var(–amber);
+}
+
+.check-box.checked::after {
+content: ‘✓’;
+font-size: 0.65rem;
+color: var(–amber);
+}
+
+.check-label {
+font-size: 0.82rem;
+color: var(–text);
+flex: 1;
+}
+
+.check-tag-inline {
+margin-top: 3px;
+}
+
+.phase-title {
+font-family: var(–display);
+font-weight: 700;
+font-size: 0.72rem;
+letter-spacing: 0.18em;
+text-transform: uppercase;
+color: var(–text-dim);
+padding: 8px 0 6px;
+}
+
+.checklist-stack { display: flex; flex-direction: column; gap: 5px; }
+
+.progress-bar-wrap {
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 2px;
+height: 6px;
+overflow: hidden;
+margin-bottom: 14px;
+}
+
+.progress-bar-fill {
+height: 100%;
+background: var(–amber);
+border-radius: 2px;
+transition: width 0.3s ease;
+box-shadow: 0 0 8px var(–amber-glow);
+}
+
+/* ────────────────────────────────────────────────────
+TAB 4 — UNIT CONVERTER
+──────────────────────────────────────────────────── */
+.conv-table {
+width: 100%;
+border-collapse: collapse;
+font-family: var(–mono);
+font-size: 0.78rem;
+}
+
+.conv-table th {
+text-align: left;
+padding: 6px 10px;
+color: var(–text-dim);
+font-size: 0.6rem;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+border-bottom: 1px solid var(–border);
+}
+
+.conv-table td {
+padding: 7px 10px;
+border-bottom: 1px solid var(–border);
+}
+
+.conv-table tr:last-child td { border-bottom: none; }
+
+.conv-table td:first-child { color: var(–text-dim); }
+.conv-table td:last-child  { color: var(–amber); }
+
+/* ────────────────────────────────────────────────────
+TAB 5 — QUICK REF
+──────────────────────────────────────────────────── */
+.ref-section-title {
+font-family: var(–display);
+font-weight: 700;
+font-size: 0.75rem;
+letter-spacing: 0.18em;
+text-transform: uppercase;
+color: var(–text-dim);
+margin-bottom: 8px;
+padding-bottom: 4px;
+border-bottom: 1px solid var(–border);
+}
+
+.ref-table {
+width: 100%;
+border-collapse: collapse;
+font-family: var(–mono);
+font-size: 0.75rem;
+}
+
+.ref-table td {
+padding: 5px 8px;
+border-bottom: 1px solid var(–border);
+vertical-align: top;
+}
+
+.ref-table tr:last-child td { border-bottom: none; }
+
+.ref-table td:first-child {
+color: var(–amber);
+white-space: nowrap;
+width: 1%;
+padding-right: 16px;
+}
+
+.ref-table td:last-child { color: var(–text-dim); }
+
+/* ────────────────────────────────────────────────────
+TAB 6 — PING LOG
+──────────────────────────────────────────────────── */
+.log-line {
+font-family: var(–mono);
+font-size: 0.75rem;
+padding: 4px 0;
+border-bottom: 1px solid var(–border);
+display: flex;
+gap: 12px;
+align-items: center;
+animation: fadein 0.2s ease;
+}
+
+.log-time { color: var(–text-dim); width: 70px; flex-shrink: 0; }
+
+.log-host { color: var(–blue); width: 160px; flex-shrink: 0; }
+
+.log-status-ok  { color: var(–green); }
+.log-status-err { color: var(–red); }
+
+.log-ms { color: var(–text-dim); margin-left: auto; }
+
+#log-output {
+max-height: 280px;
+overflow-y: auto;
+padding: 8px 0;
+}
+
+#log-output::-webkit-scrollbar { width: 4px; }
+#log-output::-webkit-scrollbar-track { background: var(–bg); }
+#log-output::-webkit-scrollbar-thumb { background: var(–border-hi); border-radius: 2px; }
+
+.stat-row {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 10px;
+margin-top: 12px;
+}
+
+.stat-box {
+background: var(–bg);
+border: 1px solid var(–border);
+border-radius: 3px;
+padding: 10px 12px;
+text-align: center;
+}
+
+.stat-val {
+font-family: var(–display);
+font-weight: 700;
+font-size: 1.4rem;
+color: var(–amber);
+line-height: 1;
+}
+
+.stat-lbl {
+font-family: var(–mono);
+font-size: 0.6rem;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 0.12em;
+margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+.grid-2, .grid-3 { grid-template-columns: 1fr; }
+.stat-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="copy-flash" id="copy-flash">COPIÉ ✓</div>
+
+<!-- HEADER -->
+
+<header>
+  <div class="logo">
+    <span class="logo-mark">OpsBoard</span>
+    <span class="logo-sub">IT Field Dashboard v1.0</span>
+  </div>
+  <div class="header-status">
+    <div class="status-dot"></div>
+    <span>ONLINE</span>
+    <span id="live-time">--:--:--</span>
+  </div>
+</header>
+
+<!-- NAV -->
+
+<nav>
+  <button class="tab-btn active" onclick="switchTab('subnet')">⬡ Subnet</button>
+  <button class="tab-btn" onclick="switchTab('cmd')">⌘ CMD Forge</button>
+  <button class="tab-btn" onclick="switchTab('incident')">⚑ Incident</button>
+  <button class="tab-btn" onclick="switchTab('convert')">⇄ Convertir</button>
+  <button class="tab-btn" onclick="switchTab('ref')">⊞ Référence</button>
+  <button class="tab-btn" onclick="switchTab('ping')">◎ Ping Sim</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     TAB 1 — SUBNET CALCULATOR
+═══════════════════════════════════════════ -->
+
+<div class="workspace active" id="tab-subnet">
+  <div class="grid-2" style="align-items: start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Calculateur CIDR</span>
+    <span class="panel-badge">IPv4</span>
+  </div>
+  <div class="panel-body">
+    <label>Adresse IP / Préfixe CIDR</label>
+    <input type="text" id="cidr-input" placeholder="ex: 192.168.1.0/24" value="192.168.1.0/24">
+    <div class="btn-group">
+      <button class="btn" onclick="calcSubnet()">Calculer</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('cidr-input').value='';document.getElementById('subnet-result').innerHTML=''">Effacer</button>
+    </div>
+
+    <hr class="divider">
+
+    <label>Shortcuts rapides</label>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('10.0.0.0/8')">/8</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('172.16.0.0/12')">/12</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('192.168.1.0/24')">/24</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('192.168.1.0/25')">/25</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('192.168.1.0/26')">/26</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('192.168.1.0/28')">/28</button>
+      <button class="btn btn-sm btn-ghost" onclick="quickSubnet('192.168.1.0/30')">/30</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Résultats</span>
+    <span class="panel-badge" id="subnet-hosts-badge">—</span>
+  </div>
+  <div class="panel-body">
+    <div id="subnet-result" class="result-grid"></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- Subnet split tool -->
+
+  <div class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+      <span class="panel-title">Split de sous-réseau</span>
+      <span class="panel-badge">VLSM HELPER</span>
+    </div>
+    <div class="panel-body">
+      <div class="grid-2">
+        <div>
+          <label>Réseau de base</label>
+          <input type="text" id="split-base" placeholder="ex: 192.168.0.0/22" value="192.168.0.0/22">
+        </div>
+        <div>
+          <label>Découper en sous-réseaux de taille</label>
+          <select id="split-size">
+            <option value="24">/24 — 254 hôtes</option>
+            <option value="25">/25 — 126 hôtes</option>
+            <option value="26">/26 — 62 hôtes</option>
+            <option value="27">/27 — 30 hôtes</option>
+            <option value="28">/28 — 14 hôtes</option>
+            <option value="29">/29 — 6 hôtes</option>
+            <option value="30">/30 — 2 hôtes (point à point)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:12px;" onclick="splitSubnets()">Générer les sous-réseaux</button>
+      <div id="split-result" class="result-box" style="margin-top:12px;display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 2 — CMD FORGE
+═══════════════════════════════════════════ -->
+
+<div class="workspace" id="tab-cmd">
+  <div class="grid-2" style="align-items:start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Générateur de commandes</span>
+    <span class="panel-badge">RÉSEAU & SYSTÈME</span>
+  </div>
+  <div class="panel-body stack">
+
+    <div>
+      <label>Catégorie</label>
+      <select id="cmd-cat" onchange="updateCmdFields()">
+        <option value="ping">Ping</option>
+        <option value="tracert">Traceroute</option>
+        <option value="nslookup">NSLookup / Dig</option>
+        <option value="ssh">SSH</option>
+        <option value="scp">SCP (copie fichier)</option>
+        <option value="netstat">Netstat</option>
+        <option value="curl">cURL HTTP</option>
+        <option value="tcpdump">tcpdump</option>
+        <option value="firewall">Firewall (iptables)</option>
+        <option value="disk">Disque & FS</option>
+      </select>
+    </div>
+
+    <div id="cmd-fields"></div>
+
+    <div>
+      <label>Système cible</label>
+      <select id="cmd-os">
+        <option value="linux">Linux / macOS</option>
+        <option value="windows">Windows (cmd/powershell)</option>
+      </select>
+    </div>
+
+    <button class="btn" onclick="buildCmd()">Forger la commande</button>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Commande générée</span>
+    <span class="panel-badge">PRÊTE À L'EMPLOI</span>
+  </div>
+  <div class="panel-body">
+    <div class="cmd-output">
+      <div id="cmd-output" class="result-box highlight" style="min-height:60px;font-size:0.82rem;">← Configure et forge ta commande</div>
+      <button class="cmd-copy-btn" onclick="copyText('cmd-output')">COPIER</button>
+    </div>
+
+    <hr class="divider">
+    <div id="cmd-explanation" style="font-size:0.78rem;color:var(--text-dim);line-height:1.7;"></div>
+
+    <hr class="divider">
+
+    <div>
+      <div class="ref-section-title" style="margin-bottom:10px;">Commandes One-Shot utiles</div>
+      <div class="cmd-category" id="oneshot-cmds"></div>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 3 — INCIDENT CHECKLIST
+═══════════════════════════════════════════ -->
+
+<div class="workspace" id="tab-incident">
+  <div class="grid-2" style="align-items:start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Type d'incident</span>
+    <span class="panel-badge">PROCÉDURE</span>
+  </div>
+  <div class="panel-body">
+    <label>Sélectionner un scénario</label>
+    <select id="incident-type" onchange="loadChecklist()">
+      <option value="net-down">Réseau en panne</option>
+      <option value="server-down">Serveur inaccessible</option>
+      <option value="perf">Lenteur / dégradation</option>
+      <option value="security">Incident sécurité</option>
+      <option value="disk-full">Disque plein</option>
+      <option value="vpn">Problème VPN</option>
+    </select>
+
+    <hr class="divider">
+    <label>Progression</label>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);text-align:right;" id="progress-text">0 / 0</div>
+
+    <hr class="divider">
+    <div class="btn-group">
+      <button class="btn btn-sm" onclick="loadChecklist()">Réinitialiser</button>
+      <button class="btn btn-sm btn-ghost" onclick="checkAll()">Tout cocher</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Checklist</span>
+    <span class="panel-badge" id="incident-badge">—</span>
+  </div>
+  <div class="panel-body">
+    <div id="checklist-content" class="checklist-stack"></div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 4 — UNIT CONVERTER
+═══════════════════════════════════════════ -->
+
+<div class="workspace" id="tab-convert">
+  <div class="grid-3" style="align-items:start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Données / Taille</span>
+    <span class="panel-badge">STOCKAGE</span>
+  </div>
+  <div class="panel-body">
+    <label>Valeur</label>
+    <input type="number" id="data-val" placeholder="ex: 1024" oninput="convertData()">
+    <label style="margin-top:10px;">Unité source</label>
+    <select id="data-unit" onchange="convertData()">
+      <option value="1">Bit</option>
+      <option value="8">Octet (B)</option>
+      <option value="8192">Kilooctet (KB)</option>
+      <option value="8388608">Mégaoctet (MB)</option>
+      <option value="8589934592">Gigaoctet (GB)</option>
+      <option value="8796093022208">Téraoctet (TB)</option>
+    </select>
+    <table class="conv-table" id="data-table" style="margin-top:12px;"></table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Débit réseau</span>
+    <span class="panel-badge">BANDWIDTH</span>
+  </div>
+  <div class="panel-body">
+    <label>Valeur</label>
+    <input type="number" id="bw-val" placeholder="ex: 100" oninput="convertBW()">
+    <label style="margin-top:10px;">Unité source</label>
+    <select id="bw-unit" onchange="convertBW()">
+      <option value="1">Kbps</option>
+      <option value="1000">Mbps</option>
+      <option value="1000000">Gbps</option>
+      <option value="0.001">bps</option>
+    </select>
+    <table class="conv-table" id="bw-table" style="margin-top:12px;"></table>
+    <hr class="divider">
+    <label>Temps de transfert estimé</label>
+    <div id="transfer-time" class="result-box" style="margin-top:6px;font-size:0.75rem;color:var(--text-dim);"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Base numérique</span>
+    <span class="panel-badge">HEX / BIN / DEC</span>
+  </div>
+  <div class="panel-body">
+    <label>Décimal</label>
+    <input type="text" id="base-dec" placeholder="ex: 255" oninput="convertBase('dec')">
+    <label style="margin-top:10px;">Hexadécimal</label>
+    <input type="text" id="base-hex" placeholder="ex: FF" oninput="convertBase('hex')">
+    <label style="margin-top:10px;">Binaire</label>
+    <input type="text" id="base-bin" placeholder="ex: 11111111" oninput="convertBase('bin')">
+    <label style="margin-top:10px;">Octal</label>
+    <input type="text" id="base-oct" placeholder="ex: 377" oninput="convertBase('oct')">
+    <hr class="divider">
+    <label>→ Adresse MAC (OUI lookup)</label>
+    <input type="text" id="mac-input" placeholder="ex: A4:C3:F0:12:34:56" oninput="formatMAC()">
+    <div id="mac-result" class="result-box" style="margin-top:6px;font-size:0.75rem;"></div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 5 — REFERENCE
+═══════════════════════════════════════════ -->
+
+<div class="workspace" id="tab-ref">
+  <div class="grid-3" style="align-items:start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Ports courants</span>
+    <span class="panel-badge">TCP/UDP</span>
+  </div>
+  <div class="panel-body">
+    <label>Filtrer</label>
+    <input type="text" id="port-filter" placeholder="Nom ou numéro…" oninput="filterPorts()">
+    <table class="ref-table" style="margin-top:10px;" id="port-table"></table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Codes HTTP</span>
+    <span class="panel-badge">REST API</span>
+  </div>
+  <div class="panel-body">
+    <label>Filtrer</label>
+    <input type="text" id="http-filter" placeholder="Code ou description…" oninput="filterHTTP()">
+    <table class="ref-table" style="margin-top:10px;" id="http-table"></table>
+  </div>
+</div>
+
+<div class="stack">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Plages RFC 1918</span>
+      <span class="panel-badge">PRIVÉ</span>
+    </div>
+    <div class="panel-body">
+      <table class="ref-table">
+        <tr><td>10.0.0.0/8</td><td>Classe A — 16M hôtes</td></tr>
+        <tr><td>172.16.0.0/12</td><td>Classe B — 1M hôtes</td></tr>
+        <tr><td>192.168.0.0/16</td><td>Classe C — 65K hôtes</td></tr>
+        <tr><td>127.0.0.1/8</td><td>Loopback</td></tr>
+        <tr><td>169.254.0.0/16</td><td>APIPA / Link-local</td></tr>
+        <tr><td>224.0.0.0/4</td><td>Multicast</td></tr>
+        <tr><td>255.255.255.255</td><td>Broadcast limité</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Protocoles couches OSI</span>
+      <span class="panel-badge">OSI MODEL</span>
+    </div>
+    <div class="panel-body">
+      <table class="ref-table">
+        <tr><td>L7 — Application</td><td>HTTP, FTP, DNS, SMTP</td></tr>
+        <tr><td>L6 — Présentation</td><td>TLS/SSL, JPEG</td></tr>
+        <tr><td>L5 — Session</td><td>NetBIOS, RPC</td></tr>
+        <tr><td>L4 — Transport</td><td>TCP, UDP, SCTP</td></tr>
+        <tr><td>L3 — Réseau</td><td>IP, ICMP, OSPF, BGP</td></tr>
+        <tr><td>L2 — Liaison</td><td>Ethernet, 802.11, VLAN</td></tr>
+        <tr><td>L1 — Physique</td><td>RJ45, Fibre, Radio</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TAB 6 — PING SIMULATOR
+═══════════════════════════════════════════ -->
+
+<div class="workspace" id="tab-ping">
+  <div class="grid-2" style="align-items:start;">
+
+```
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Ping Simulateur</span>
+    <span class="panel-badge">ICMP DEMO</span>
+  </div>
+  <div class="panel-body stack">
+    <div>
+      <label>Hôte(s) à surveiller (séparés par virgule)</label>
+      <input type="text" id="ping-hosts" value="8.8.8.8, 1.1.1.1, 192.168.1.1, 10.0.0.1">
+    </div>
+    <div>
+      <label>Intervalle (ms)</label>
+      <input type="number" id="ping-interval" value="1200" min="500" max="5000">
+    </div>
+    <div>
+      <label>Taux d'échec simulé (%)</label>
+      <input type="number" id="ping-fail" value="5" min="0" max="100">
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="ping-start-btn" onclick="togglePing()">▶ Démarrer</button>
+      <button class="btn btn-ghost" onclick="clearLog()">Effacer log</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" id="stat-sent">0</div><div class="stat-lbl">Envoyés</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-ok" style="color:var(--green)">0</div><div class="stat-lbl">Succès</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-fail" style="color:var(--red)">0</div><div class="stat-lbl">Échecs</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-loss">0%</div><div class="stat-lbl">Perte</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Journal</span>
+    <span class="panel-badge" id="ping-running-badge">STOPPED</span>
+  </div>
+  <div class="panel-body">
+    <div id="log-output"></div>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+
+<script>
+// ── UTILS ──────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.workspace').forEach(w => w.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function copyText(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.innerText || el.textContent).then(() => {
+    const flash = document.getElementById('copy-flash');
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1800);
+  });
+}
+
+function copyVal(val) {
+  navigator.clipboard.writeText(val).then(() => {
+    const flash = document.getElementById('copy-flash');
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1800);
+  });
+}
+
+// Live clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent =
+    now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── SUBNET CALCULATOR ──────────────────────────────
+function ipToLong(ip) {
+  return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct), 0) >>> 0;
+}
+
+function longToIp(n) {
+  return [(n >>> 24) & 255,(n >>> 16) & 255,(n >>> 8) & 255, n & 255].join('.');
+}
+
+function calcSubnet() {
+  const input = document.getElementById('cidr-input').value.trim();
+  const parts = input.split('/');
+  if (parts.length !== 2) return alert('Format: x.x.x.x/prefix');
+  const ip = parts[0];
+  const prefix = parseInt(parts[1]);
+  if (isNaN(prefix) || prefix < 0 || prefix > 32) return alert('Préfixe invalide (0-32)');
+
+  const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const network = (ipToLong(ip) & mask) >>> 0;
+  const broadcast = (network | (~mask >>> 0)) >>> 0;
+  const firstHost = prefix < 31 ? network + 1 : network;
+  const lastHost  = prefix < 31 ? broadcast - 1 : broadcast;
+  const hosts     = prefix <= 30 ? Math.pow(2, 32 - prefix) - 2 : prefix === 31 ? 2 : 1;
+
+  const maskStr = longToIp(mask);
+  const wildcardStr = longToIp(~mask >>> 0);
+
+  document.getElementById('subnet-hosts-badge').textContent = hosts.toLocaleString() + ' hôtes';
+
+  const rows = [
+    ['Réseau',      longToIp(network)],
+    ['Broadcast',   longToIp(broadcast)],
+    ['Premier hôte',longToIp(firstHost)],
+    ['Dernier hôte',longToIp(lastHost)],
+    ['Masque',      maskStr],
+    ['Wildcard',    wildcardStr],
+    ['Hôtes valides', hosts.toLocaleString()],
+    ['Classe CIDR', '/'+prefix],
+  ];
+
+  document.getElementById('subnet-result').innerHTML = rows.map(([l,v]) =>
+    `<div class="result-row">
+      <span class="result-label">${l}</span>
+      <span class="result-value" onclick="copyVal('${v}')" title="Cliquer pour copier">${v}</span>
+    </div>`
+  ).join('');
+}
+
+function quickSubnet(cidr) {
+  document.getElementById('cidr-input').value = cidr;
+  calcSubnet();
+}
+
+function splitSubnets() {
+  const base = document.getElementById('split-base').value.trim();
+  const size = parseInt(document.getElementById('split-size').value);
+  const parts = base.split('/');
+  if (parts.length !== 2) return;
+  const basePrefix = parseInt(parts[1]);
+  if (size <= basePrefix) { alert('Le sous-réseau doit être plus petit que le réseau de base.'); return; }
+
+  const count = Math.pow(2, size - basePrefix);
+  const blockSize = Math.pow(2, 32 - size);
+  const baseAddr = ipToLong(parts[0]) & ((0xFFFFFFFF << (32 - basePrefix)) >>> 0);
+  const maxShow = Math.min(count, 32);
+
+  let out = `${count} sous-réseau(x) /${size} dans ${base}:\n\n`;
+  for (let i = 0; i < maxShow; i++) {
+    const net = (baseAddr + i * blockSize) >>> 0;
+    const bc  = (net + blockSize - 1) >>> 0;
+    out += `[${String(i).padStart(2,'0')}]  ${longToIp(net)}/${size}  →  ${longToIp(bc)}\n`;
+  }
+  if (count > maxShow) out += `\n... et ${count - maxShow} autres`;
+
+  const box = document.getElementById('split-result');
+  box.style.display = 'block';
+  box.textContent = out;
+}
+
+// ── CMD FORGE ──────────────────────────────────────
+const cmdDefs = {
+  ping: {
+    fields: [
+      {id:'ping-target', label:'Cible (IP ou hostname)', placeholder:'8.8.8.8'},
+      {id:'ping-count',  label:'Nombre de paquets', placeholder:'4', default:'4'},
+    ],
+    build: (f, os) => {
+      const t = f[0]||'8.8.8.8', c = f[1]||'4';
+      return os==='windows'
+        ? `ping -n ${c} ${t}`
+        : `ping -c ${c} ${t}`;
+    },
+    explain: 'Envoie des paquets ICMP Echo Request pour tester la connectivité et mesurer la latence.',
+  },
+  tracert: {
+    fields: [{id:'tr-target', label:'Cible', placeholder:'google.com'}],
+    build: (f, os) => os==='windows' ? `tracert ${f[0]||'google.com'}` : `traceroute ${f[0]||'google.com'}`,
+    explain: 'Affiche le chemin des paquets à travers le réseau, hop par hop.',
+  },
+  nslookup: {
+    fields: [
+      {id:'ns-domain', label:'Domaine', placeholder:'example.com'},
+      {id:'ns-type',   label:'Type d\'enregistrement', placeholder:'A', default:'A'},
+      {id:'ns-server', label:'Serveur DNS (opt.)', placeholder:'8.8.8.8'},
+    ],
+    build: (f, os) => {
+      const d = f[0]||'example.com', t = f[1]||'A', s = f[2];
+      if (os==='windows') return s ? `nslookup -type=${t} ${d} ${s}` : `nslookup -type=${t} ${d}`;
+      return s ? `dig @${s} ${d} ${t}` : `dig ${d} ${t}`;
+    },
+    explain: 'Interroge les DNS. dig (Linux) renvoie plus de détails que nslookup.',
+  },
+  ssh: {
+    fields: [
+      {id:'ssh-user',   label:'Utilisateur', placeholder:'admin'},
+      {id:'ssh-host',   label:'Hôte', placeholder:'192.168.1.1'},
+      {id:'ssh-port',   label:'Port', placeholder:'22', default:'22'},
+      {id:'ssh-key',    label:'Clé privée (opt.)', placeholder:'/home/user/.ssh/id_rsa'},
+    ],
+    build: (f, os) => {
+      const u=f[0]||'admin', h=f[1]||'host', p=f[2]||'22', k=f[3];
+      const base = k ? `ssh -i ${k} -p ${p} ${u}@${h}` : `ssh -p ${p} ${u}@${h}`;
+      return base;
+    },
+    explain: 'Connexion SSH sécurisée. Spécifier une clé avec -i est recommandé en production.',
+  },
+  scp: {
+    fields: [
+      {id:'scp-src', label:'Source (local ou user@host:path)', placeholder:'/local/file.txt'},
+      {id:'scp-dst', label:'Destination', placeholder:'admin@192.168.1.1:/remote/'},
+      {id:'scp-port', label:'Port SSH', placeholder:'22', default:'22'},
+    ],
+    build: (f, os) => {
+      const s=f[0]||'file.txt', d=f[1]||'admin@host:/path', p=f[2]||'22';
+      return `scp -P ${p} ${s} ${d}`;
+    },
+    explain: 'Copie sécurisée de fichiers via SSH. Utiliser -r pour les dossiers.',
+  },
+  netstat: {
+    fields: [],
+    build: (f, os) => os==='windows'
+      ? 'netstat -ano | findstr LISTENING'
+      : 'ss -tulpn',
+    explain: 'Liste les ports ouverts et les connexions actives. ss est le successeur moderne de netstat sur Linux.',
+  },
+  curl: {
+    fields: [
+      {id:'curl-url',    label:'URL', placeholder:'https://api.example.com/data'},
+      {id:'curl-method', label:'Méthode', placeholder:'GET', default:'GET'},
+      {id:'curl-header', label:'Header (opt.)', placeholder:'Authorization: Bearer TOKEN'},
+      {id:'curl-body',   label:'Body JSON (opt.)', placeholder:'{"key":"value"}'},
+    ],
+    build: (f, os) => {
+      const url=f[0]||'https://example.com', m=f[1]||'GET', h=f[2], b=f[3];
+      let cmd = `curl -X ${m}`;
+      if (h) cmd += ` -H "${h}"`;
+      if (b) cmd += ` -H "Content-Type: application/json" -d '${b}'`;
+      cmd += ` "${url}"`;
+      return cmd;
+    },
+    explain: 'cURL permet de tester des APIs HTTP directement depuis le terminal.',
+  },
+  tcpdump: {
+    fields: [
+      {id:'td-iface',  label:'Interface', placeholder:'eth0'},
+      {id:'td-filter', label:'Filtre BPF (opt.)', placeholder:'port 80'},
+      {id:'td-count',  label:'Nb paquets', placeholder:'20', default:'20'},
+    ],
+    build: (f, os) => {
+      const i=f[0]||'eth0', fil=f[1], c=f[2]||'20';
+      return fil
+        ? `tcpdump -i ${i} -n -c ${c} "${fil}"`
+        : `tcpdump -i ${i} -n -c ${c}`;
+    },
+    explain: 'Capture et analyse le trafic réseau en temps réel. Requiert les droits root.',
+  },
+  firewall: {
+    fields: [
+      {id:'fw-action', label:'Action', placeholder:'ACCEPT'},
+      {id:'fw-proto',  label:'Protocole', placeholder:'tcp'},
+      {id:'fw-port',   label:'Port', placeholder:'443'},
+      {id:'fw-src',    label:'Source IP (opt.)', placeholder:'0.0.0.0/0'},
+    ],
+    build: (f, os) => {
+      const a=f[0]||'ACCEPT', pr=f[1]||'tcp', p=f[2]||'80', src=f[3]||'0.0.0.0/0';
+      if (os==='windows') return `netsh advfirewall firewall add rule name="Rule" protocol=${pr} localport=${p} action=${a==='ACCEPT'?'allow':'block'} dir=in`;
+      return `iptables -A INPUT -p ${pr} --dport ${p} -s ${src} -j ${a}`;
+    },
+    explain: 'Règle de pare-feu. Sur les systèmes modernes, préférer nftables ou ufw à iptables.',
+  },
+  disk: {
+    fields: [],
+    build: (f, os) => os==='windows'
+      ? 'wmic logicaldisk get size,freespace,caption'
+      : 'df -h --output=source,size,used,avail,pcent,target | sort -k5 -rh',
+    explain: 'Affiche l\'utilisation des disques. Le tri par % d\'usage permet d\'identifier les disques critiques.',
+  },
+};
+
+function updateCmdFields() {
+  const cat = document.getElementById('cmd-cat').value;
+  const def = cmdDefs[cat];
+  const container = document.getElementById('cmd-fields');
+  container.innerHTML = def.fields.map(f =>
+    `<div style="margin-bottom:10px;">
+      <label>${f.label}</label>
+      <input type="text" id="${f.id}" placeholder="${f.placeholder}" value="${f.default||''}">
+    </div>`
+  ).join('');
+}
+
+function buildCmd() {
+  const cat = document.getElementById('cmd-cat').value;
+  const os  = document.getElementById('cmd-os').value;
+  const def = cmdDefs[cat];
+  const vals = def.fields.map(f => {
+    const el = document.getElementById(f.id);
+    return el ? el.value.trim() : '';
+  });
+  const cmd = def.build(vals, os);
+  document.getElementById('cmd-output').textContent = cmd;
+  document.getElementById('cmd-explanation').innerHTML = `<strong style="color:var(--text);">Explication :</strong><br>${def.explain}`;
+}
+
+// One-shot commands
+const oneshots = [
+  { title: 'Interfaces réseau', desc: 'Liste toutes les interfaces et IPs', cmd: 'ip addr show  # Linux\nipconfig /all  # Windows' },
+  { title: 'Table de routage', desc: 'Affiche les routes actives', cmd: 'ip route show  # Linux\nroute print    # Windows' },
+  { title: 'Connexions actives', desc: 'Ports TCP en écoute', cmd: 'ss -tulpn  # Linux\nnetstat -ano  # Windows' },
+  { title: 'Flush DNS', desc: 'Vider le cache DNS', cmd: 'sudo systemd-resolve --flush-caches  # Linux\nipconfig /flushdns  # Windows' },
+  { title: 'Tester port TCP', desc: 'Tester si un port est joignable', cmd: 'nc -zv 192.168.1.1 443  # Linux\nTest-NetConnection 192.168.1.1 -Port 443  # PS' },
+];
+
+document.getElementById('oneshot-cmds').innerHTML = oneshots.map(o =>
+  `<div class="cmd-card" onclick="document.getElementById('cmd-output').textContent=\`${o.cmd.replace(/`/g,'\\`')}\`;document.getElementById('cmd-explanation').innerHTML='<strong style=\\'color:var(--text)\\'>'+\`${o.title}\`+'</strong><br>'+\`${o.desc}\`">
+    <div class="cmd-card-title">${o.title}</div>
+    <div class="cmd-card-desc">${o.desc}</div>
+  </div>`
+).join('');
+
+updateCmdFields();
+
+// ── INCIDENT CHECKLIST ─────────────────────────────
+const checklists = {
+  'net-down': {
+    label: 'RÉSEAU EN PANNE',
+    phases: [
+      { title: '🔎 Diagnostic initial', items: [
+        'Vérifier si le problème est local (un poste) ou généralisé',
+        'Ping vers gateway locale (ex: 192.168.1.1)',
+        'Ping vers DNS public (8.8.8.8)',
+        'Vérifier les câbles et LEDs de switch',
+        'Contrôler les logs du routeur/switch',
+      ]},
+      { title: '🔧 Actions correctives', items: [
+        'Redémarrer le switch d\'accès si LEDs anormales',
+        'Vérifier le DHCP — IP bien attribuée ?',
+        'Tester avec IP statique temporaire',
+        'Contrôler la table ARP (arp -a)',
+        'Relancer l\'interface réseau (ip link set eth0 down/up)',
+      ]},
+      { title: '📋 Clôture', items: [
+        'Documenter la cause racine',
+        'Informer les utilisateurs de la résolution',
+        'Vérifier que tous les services sont de retour',
+      ]},
+    ],
+  },
+  'server-down': {
+    label: 'SERVEUR INACCESSIBLE',
+    phases: [
+      { title: '🔎 Vérification rapide', items: [
+        'Ping le serveur depuis plusieurs postes',
+        'Vérifier la console IPMI/iDRAC/ILO si dispo',
+        'Tester SSH ou RDP directement',
+        'Vérifier le statut dans la plateforme VM (ESXi, Proxmox…)',
+      ]},
+      { title: '🔧 Investigation', items: [
+        'Consulter les logs système (/var/log/syslog, journalctl)',
+        'Vérifier l\'espace disque (df -h)',
+        'Vérifier la charge CPU/RAM (top, htop)',
+        'Contrôler les services critiques (systemctl status)',
+        'Vérifier les règles de firewall',
+      ]},
+      { title: '🔁 Remédiation', items: [
+        'Redémarrer le service défaillant',
+        'Libérer de l\'espace disque si nécessaire',
+        'Escalader si pas de console disponible',
+        'Notifier les équipes impactées',
+      ]},
+    ],
+  },
+  'perf': {
+    label: 'LENTEUR / DÉGRADATION',
+    phases: [
+      { title: '📊 Mesure de base', items: [
+        'Identifier si le problème est réseau ou serveur',
+        'Mesurer la latence vers gateway et Internet',
+        'Tester le débit avec iperf3 ou speedtest-cli',
+        'Vérifier les graphiques de monitoring (si dispo)',
+      ]},
+      { title: '🔧 Investigation réseau', items: [
+        'Contrôler les erreurs sur les interfaces (ethtool, ip -s link)',
+        'Vérifier les collisions et CRC errors sur les switches',
+        'Identifier les gros consommateurs de bande passante (ntopng, iftop)',
+        'Vérifier saturation CPU/RAM du routeur',
+      ]},
+      { title: '🔧 Investigation système', items: [
+        'Analyser les I/O disque (iostat, iotop)',
+        'Détecter les processus CPU/RAM gourmands (top)',
+        'Vérifier swap et OOM killer dans les logs',
+        'Contrôler les connexions TCP en attente (ss -s)',
+      ]},
+    ],
+  },
+  'security': {
+    label: 'INCIDENT SÉCURITÉ',
+    phases: [
+      { title: '⚡ Confinement immédiat', items: [
+        'NE PAS éteindre la machine — préserver les preuves en RAM',
+        'Isoler la machine du réseau (VLAN ou câble débranché)',
+        'Alerter RSSI / supérieur hiérarchique',
+        'Documenter l\'heure et la nature de la détection',
+      ]},
+      { title: '🔎 Analyse forensique', items: [
+        'Capturer les processus actifs (ps auxf > processes.txt)',
+        'Capturer les connexions réseau (ss -tulpn > network.txt)',
+        'Vérifier les crontabs et services au démarrage',
+        'Contrôler les comptes créés récemment (/etc/passwd)',
+        'Chercher les fichiers modifiés récemment (find / -mtime -1)',
+      ]},
+      { title: '📋 Reporting', items: [
+        'Rédiger le rapport d\'incident (qui, quoi, quand, comment)',
+        'Lister les systèmes potentiellement impactés',
+        'Préparer le plan de remédiation',
+        'Notifier les autorités si données personnelles compromises (RGPD)',
+      ]},
+    ],
+  },
+  'disk-full': {
+    label: 'DISQUE PLEIN',
+    phases: [
+      { title: '🔎 Localisation', items: [
+        'Identifier le FS plein (df -h)',
+        'Trouver les gros dossiers (du -sh /* | sort -rh | head)',
+        'Vérifier les logs volumineux (/var/log)',
+        'Contrôler les fichiers de core dump',
+      ]},
+      { title: '🔧 Nettoyage', items: [
+        'Supprimer les vieux logs (logrotate ou rm manuel)',
+        'Vider les corbeilles et /tmp',
+        'Nettoyer les paquets inutilisés (apt autoremove)',
+        'Supprimer les anciennes images Docker',
+        'Archiver ou déplacer les fichiers volumineux',
+      ]},
+      { title: '🔁 Prévention', items: [
+        'Mettre en place des alertes de monitoring',
+        'Configurer logrotate correctement',
+        'Prévoir extension de volume si récurrent',
+      ]},
+    ],
+  },
+  'vpn': {
+    label: 'PROBLÈME VPN',
+    phases: [
+      { title: '🔎 Diagnostic', items: [
+        'Vérifier la connectivité Internet de base avant VPN',
+        'Contrôler les credentials (identifiant / certificat expiré ?)',
+        'Vérifier la version du client VPN',
+        'Tester depuis un autre réseau (4G vs WiFi)',
+      ]},
+      { title: '🔧 Côté client', items: [
+        'Désactiver et réactiver l\'interface VPN',
+        'Vider le cache / recharger le profil VPN',
+        'Vérifier que les ports VPN ne sont pas bloqués (UDP 500, 4500, TCP 443)',
+        'Contrôler le firewall local',
+        'Vérifier les logs client VPN',
+      ]},
+      { title: '🔧 Côté serveur', items: [
+        'Vérifier les logs IKE/IPsec ou OpenVPN côté concentrateur',
+        'Contrôler la compatibilité DH Group (iOS ne supporte que 14-18)',
+        'Vérifier les licences utilisateurs simultanés',
+        'Contrôler la charge CPU du concentrateur VPN',
+      ]},
+    ],
+  },
+};
+
+let checkStates = [];
+
+function loadChecklist() {
+  const type = document.getElementById('incident-type').value;
+  const data = checklists[type];
+  document.getElementById('incident-badge').textContent = data.label;
+
+  const allItems = data.phases.flatMap(p => p.items);
+  checkStates = allItems.map(() => false);
+
+  let html = '';
+  let idx = 0;
+  data.phases.forEach(phase => {
+    html += `<div class="phase-title">${phase.title}</div>`;
+    phase.items.forEach(item => {
+      const i = idx++;
+      html += `<div class="checklist-item" id="check-item-${i}">
+        <div class="check-box" id="check-box-${i}" onclick="toggleCheck(${i})"></div>
+        <span class="check-label">${item}</span>
+      </div>`;
+    });
+  });
+  document.getElementById('checklist-content').innerHTML = html;
+  updateProgress();
+}
+
+function toggleCheck(i) {
+  checkStates[i] = !checkStates[i];
+  document.getElementById('check-box-'+i).classList.toggle('checked', checkStates[i]);
+  document.getElementById('check-item-'+i).classList.toggle('done', checkStates[i]);
+  updateProgress();
+}
+
+function checkAll() {
+  checkStates = checkStates.map(() => true);
+  checkStates.forEach((_, i) => {
+    document.getElementById('check-box-'+i).classList.add('checked');
+    document.getElementById('check-item-'+i).classList.add('done');
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = checkStates.filter(Boolean).length;
+  const total = checkStates.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-text').textContent = `${done} / ${total} — ${pct}%`;
+}
+
+loadChecklist();
+
+// ── UNIT CONVERTER ─────────────────────────────────
+function convertData() {
+  const val = parseFloat(document.getElementById('data-val').value);
+  const unit = parseFloat(document.getElementById('data-unit').value);
+  if (isNaN(val)) { document.getElementById('data-table').innerHTML = ''; return; }
+  const bits = val * unit;
+  const rows = [
+    ['Bits',    bits],
+    ['Octets (B)', bits/8],
+    ['Ko (KB)', bits/8/1024],
+    ['Mo (MB)', bits/8/1024/1024],
+    ['Go (GB)', bits/8/1024/1024/1024],
+    ['To (TB)', bits/8/1024/1024/1024/1024],
+  ];
+  document.getElementById('data-table').innerHTML =
+    '<tr><th>Unité</th><th>Valeur</th></tr>' +
+    rows.map(([l,v]) => `<tr><td>${l}</td><td>${fmt(v)}</td></tr>`).join('');
+}
+
+function convertBW() {
+  const val  = parseFloat(document.getElementById('bw-val').value);
+  const unit = parseFloat(document.getElementById('bw-unit').value);
+  if (isNaN(val)) { document.getElementById('bw-table').innerHTML = ''; return; }
+  const kbps = val * unit;
+  const rows = [
+    ['bps',  kbps * 1000],
+    ['Kbps', kbps],
+    ['Mbps', kbps / 1000],
+    ['Gbps', kbps / 1000000],
+  ];
+  document.getElementById('bw-table').innerHTML =
+    '<tr><th>Unité</th><th>Valeur</th></tr>' +
+    rows.map(([l,v]) => `<tr><td>${l}</td><td>${fmt(v)}</td></tr>`).join('');
+
+  // Transfer time for 1 GB
+  const secs = (1024*1024*1024*8) / (kbps*1000);
+  document.getElementById('transfer-time').textContent =
+    `1 Go à ${fmt(kbps)} Kbps ≈ ${formatDuration(secs)}`;
+}
+
+function formatDuration(s) {
+  if (s < 1) return (s*1000).toFixed(0) + ' ms';
+  if (s < 60) return s.toFixed(1) + ' sec';
+  if (s < 3600) return (s/60).toFixed(1) + ' min';
+  return (s/3600).toFixed(2) + ' h';
+}
+
+function fmt(n) {
+  if (n === 0) return '0';
+  if (Math.abs(n) < 0.0001) return n.toExponential(3);
+  if (Math.abs(n) >= 1e9) return (n/1e9).toFixed(3) + 'G';
+  if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(3) + 'M';
+  if (Math.abs(n) >= 1000) return n.toLocaleString('fr-FR',{maximumFractionDigits:3});
+  return parseFloat(n.toPrecision(6)).toString();
+}
+
+let baseConverting = false;
+function convertBase(from) {
+  if (baseConverting) return;
+  baseConverting = true;
+  try {
+    let dec;
+    if (from === 'dec') {
+      dec = parseInt(document.getElementById('base-dec').value, 10);
+    } else if (from === 'hex') {
+      dec = parseInt(document.getElementById('base-hex').value, 16);
+    } else if (from === 'bin') {
+      dec = parseInt(document.getElementById('base-bin').value, 2);
+    } else {
+      dec = parseInt(document.getElementById('base-oct').value, 8);
+    }
+    if (isNaN(dec)) { baseConverting = false; return; }
+    if (from !== 'dec') document.getElementById('base-dec').value = dec;
+    if (from !== 'hex') document.getElementById('base-hex').value = dec.toString(16).toUpperCase();
+    if (from !== 'bin') document.getElementById('base-bin').value = dec.toString(2);
+    if (from !== 'oct') document.getElementById('base-oct').value = dec.toString(8);
+  } catch(e) {}
+  baseConverting = false;
+}
+
+function formatMAC() {
+  const raw = document.getElementById('mac-input').value.replace(/[^a-fA-F0-9]/g,'').toUpperCase();
+  const oui = raw.slice(0,6);
+  const formatted = raw.match(/.{1,2}/g)?.slice(0,6).join(':') || '';
+  document.getElementById('mac-input').value = formatted;
+  const el = document.getElementById('mac-result');
+  if (raw.length >= 6) {
+    el.textContent = `OUI: ${oui.slice(0,2)}:${oui.slice(2,4)}:${oui.slice(4,6)}\nLookup: https://maclookup.app/search?query=${oui}`;
+    el.style.color = 'var(--amber)';
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ── REFERENCE ──────────────────────────────────────
+const ports = [
+  [21,'FTP','TCP'],[22,'SSH','TCP'],[23,'Telnet','TCP'],[25,'SMTP','TCP'],
+  [53,'DNS','TCP/UDP'],[67,'DHCP Server','UDP'],[68,'DHCP Client','UDP'],
+  [69,'TFTP','UDP'],[80,'HTTP','TCP'],[110,'POP3','TCP'],[119,'NNTP','TCP'],
+  [123,'NTP','UDP'],[143,'IMAP','TCP'],[161,'SNMP','UDP'],[194,'IRC','TCP'],
+  [389,'LDAP','TCP'],[443,'HTTPS','TCP'],[445,'SMB','TCP'],[465,'SMTPS','TCP'],
+  [500,'IKE/IPsec','UDP'],[514,'Syslog','UDP'],[515,'LPD','TCP'],
+  [587,'SMTP Auth','TCP'],[636,'LDAPS','TCP'],[993,'IMAPS','TCP'],
+  [995,'POP3S','TCP'],[1080,'SOCKS','TCP'],[1194,'OpenVPN','UDP'],
+  [1433,'MSSQL','TCP'],[1521,'Oracle DB','TCP'],[1723,'PPTP','TCP'],
+  [3306,'MySQL','TCP'],[3389,'RDP','TCP'],[4500,'IPsec NAT','UDP'],
+  [5432,'PostgreSQL','TCP'],[5900,'VNC','TCP'],[6379,'Redis','TCP'],
+  [8080,'HTTP Alt','TCP'],[8443,'HTTPS Alt','TCP'],[9200,'Elasticsearch','TCP'],
+  [27017,'MongoDB','TCP'],
+];
+
+const httpCodes = [
+  [200,'OK — Succès'],[201,'Created — Ressource créée'],[204,'No Content'],
+  [301,'Moved Permanently'],[302,'Found (Redirect temp.)'],[304,'Not Modified'],
+  [400,'Bad Request — Syntaxe invalide'],[401,'Unauthorized — Auth requise'],
+  [403,'Forbidden — Accès refusé'],[404,'Not Found — Ressource introuvable'],
+  [405,'Method Not Allowed'],[408,'Request Timeout'],[409,'Conflict'],
+  [410,'Gone — Ressource supprimée'],[422,'Unprocessable Entity'],
+  [429,'Too Many Requests — Rate limit'],[500,'Internal Server Error'],
+  [501,'Not Implemented'],[502,'Bad Gateway'],[503,'Service Unavailable'],
+  [504,'Gateway Timeout'],[505,'HTTP Version Not Supported'],
+];
+
+function renderPorts(filter='') {
+  const f = filter.toLowerCase();
+  const rows = ports.filter(([n,s,p]) =>
+    f === '' || String(n).includes(f) || s.toLowerCase().includes(f) || p.toLowerCase().includes(f)
+  );
+  document.getElementById('port-table').innerHTML =
+    '<tr><th>Port</th><th>Service</th><th>Proto</th></tr>' +
+    rows.map(([n,s,p]) => `<tr><td>${n}</td><td>${s}</td><td>${p}</td></tr>`).join('');
+}
+
+function filterPorts() {
+  renderPorts(document.getElementById('port-filter').value);
+}
+
+function renderHTTP(filter='') {
+  const f = filter.toLowerCase();
+  const rows = httpCodes.filter(([c,d]) =>
+    f === '' || String(c).includes(f) || d.toLowerCase().includes(f)
+  );
+  document.getElementById('http-table').innerHTML =
+    '<tr><th>Code</th><th>Description</th></tr>' +
+    rows.map(([c,d]) => {
+      const cls = c<300?'tag-green':c<400?'tag-blue':c<500?'tag-amber':'tag-red';
+      return `<tr><td><span class="tag ${cls}">${c}</span></td><td>${d}</td></tr>`;
+    }).join('');
+}
+
+function filterHTTP() {
+  renderHTTP(document.getElementById('http-filter').value);
+}
+
+renderPorts(); renderHTTP();
+
+// ── PING SIMULATOR ─────────────────────────────────
+let pingRunning = false;
+let pingTimer   = null;
+let pingStats   = { sent: 0, ok: 0, fail: 0 };
+
+function togglePing() {
+  pingRunning = !pingRunning;
+  const btn = document.getElementById('ping-start-btn');
+  const badge = document.getElementById('ping-running-badge');
+  if (pingRunning) {
+    btn.textContent = '⏹ Arrêter';
+    badge.textContent = 'RUNNING';
+    badge.style.color = 'var(--green)';
+    runPing();
+  } else {
+    btn.textContent = '▶ Démarrer';
+    badge.textContent = 'STOPPED';
+    badge.style.color = '';
+    clearTimeout(pingTimer);
+  }
+}
+
+function runPing() {
+  if (!pingRunning) return;
+  const hosts = document.getElementById('ping-hosts').value.split(',').map(h => h.trim()).filter(Boolean);
+  const failRate = parseFloat(document.getElementById('ping-fail').value) / 100;
+  const interval = parseInt(document.getElementById('ping-interval').value);
+
+  hosts.forEach(host => {
+    const ok = Math.random() > failRate;
+    const ms = ok ? Math.floor(Math.random() * 80 + 1) : null;
+    pingStats.sent++;
+    if (ok) pingStats.ok++; else pingStats.fail++;
+
+    const log = document.getElementById('log-output');
+    const now = new Date().toTimeString().slice(0,8);
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `
+      <span class="log-time">${now}</span>
+      <span class="log-host">${host}</span>
+      <span class="${ok ? 'log-status-ok' : 'log-status-err'}">${ok ? '● ONLINE' : '✕ TIMEOUT'}</span>
+      <span class="log-ms">${ok ? ms+'ms' : '—'}</span>
+    `;
+    log.insertBefore(line, log.firstChild);
+
+    // Cap log lines
+    while (log.children.length > 80) log.removeChild(log.lastChild);
+  });
+
+  const loss = pingStats.sent ? Math.round(pingStats.fail / pingStats.sent * 100) : 0;
+  document.getElementById('stat-sent').textContent = pingStats.sent;
+  document.getElementById('stat-ok').textContent   = pingStats.ok;
+  document.getElementById('stat-fail').textContent = pingStats.fail;
+  document.getElementById('stat-loss').textContent = loss + '%';
+  document.getElementById('stat-loss').parentElement.querySelector('.stat-val').style.color =
+    loss > 10 ? 'var(--red)' : loss > 0 ? 'var(--amber)' : 'var(--green)';
+
+  pingTimer = setTimeout(runPing, interval);
+}
+
+function clearLog() {
+  document.getElementById('log-output').innerHTML = '';
+  pingStats = { sent: 0, ok: 0, fail: 0 };
+  ['stat-sent','stat-ok','stat-fail','stat-loss'].forEach(id => {
+    document.getElementById(id).textContent = id === 'stat-loss' ? '0%' : '0';
+  });
+}
+</script>
+
+</body>
+</html>
